@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8"/>
 		<meta http-equiv="X-UA-Compatible" content="chrome=1"/>
-		<title>FlightGL - Experience a Flight Right in Your Browser</title>
+		<title>FlightGL - An Online Flight Simulator</title>
 		<style>
 			body {
 				background-color:#000000;
@@ -12,13 +12,14 @@
 			}
 			
 			h1 {
+			    font-family:fantasy;
 				text-shadow:0 0 3px #ffffff;
 			}
 		</style>
 	</head>
 	<body>
-		<h1><font face="fantasy">FlightGL</font></h1>
-<hr width="100%" size="5"/>
+		<h1>FlightGL</h1>
+        <hr width="100%" size="5"/>
 		<script src="js/RequestAnimationFrame.js"></script>
 		<script src="js/Three.js"></script>
 		<script type="text/javascript">
@@ -53,22 +54,37 @@
 			
 			renderer.setSize( cw, ch );
 			
+			var curapn = 'Typhoon_X1'
+			var curtrrn = 'sandway';
+			
 			var loader = new THREE.JSONLoader( true ),
-				apnmodel = 'airplane/Typhoon_X1.js',
-				trrnmodel = 'terrain/sandway.js';
+				apnmodel = 'airplane/' + curapn + '.js',
+				trrnmodel = 'terrain/' + curtrrn + '.js';
 				loader.load( { model: apnmodel, callback: apn } );
 				loader.load( { model: trrnmodel, callback: trrn } );
 			
+			var envImgMapURLs = [
+			  'terrain/' + curtrrn + '_x_pos.png',
+			  'terrain/' + curtrrn + '_x_neg.png',
+			  'terrain/' + curtrrn + '_y_pos.png',
+			  'terrain/' + curtrrn + '_y_neg.png',
+			  'terrain/' + curtrrn + '_z_pos.png',
+			  'terrain/' + curtrrn + '_z_neg.png'
+			];
+			
+			var envCubeMap = THREE.ImageUtils.loadTextureCube(envImgMapURLs);
+			    envCubeMap.format = THREE.RGBFormat;
+
 			var l = new THREE.PointLight( 0xFFFFFF );
 				l.position.x = 0;
-				l.position.y = 100;
-				l.position.z = -10;
+				l.position.y = 1000;
+				l.position.z = 0;
 			scene.addLight( l );
 			
 			cont.appendChild( renderer.domElement );
 			
 			function trrn( geometry ) {
-				var mat = [ new THREE.MeshFaceMaterial(), new THREE.MeshLambertMaterial( { color: 0x442005, shading:THREE.FlatShading} ) ];
+				var mat = [ new THREE.MeshFaceMaterial(), new THREE.MeshBasicMaterial( { color: 0x442005, shading:THREE.SmoothShading, envMap:envCubeMap} ) ];
 				
 				terrain = new THREE.Mesh( geometry, mat );
 				terrain.scale.x = 100;
@@ -78,7 +94,7 @@
 			}
 			
 			function apn( geometry ) {
-				var mat = [ new THREE.MeshFaceMaterial(), new THREE.MeshLambertMaterial( { color: 0xDDEEFF, opacity:0.9, shading:THREE.FlatShading } ) ];			
+				var mat = [ new THREE.MeshFaceMaterial(), new THREE.MeshBasicMaterial( { color: 0xEEEEEE, shading:THREE.SmoothShading, envMap:envCubeMap} )];			
 
 				airpln = new THREE.Mesh( geometry, mat );
 				airpln.scale.x = 2;
@@ -88,6 +104,21 @@
 				airpln.dynamic = true;
 				scene.addObject( airpln );
 			}
+			
+			var envshader = THREE.ShaderUtils.lib[ "cube" ];
+            envshader.uniforms[ "tCube" ].texture = envCubeMap;
+
+            var envmaterial = new THREE.MeshShaderMaterial( {
+             fragmentShader: envshader.fragmentShader,
+             vertexShader: envshader.vertexShader,
+             uniforms: envshader.uniforms,
+             depthWrite: false
+            });
+
+           var skybox = new THREE.Mesh( new THREE.SphereGeometry( 1000, 10, 10 ), envmaterial );
+           skybox.flipSided = true;
+		   scene.addObject(skybox);
+
 			
 			window.addEventListener( 'keydown', function(){
 				switch(event.keyCode){
@@ -133,6 +164,7 @@
 				cz = pz + 175;
 				airpln.position.z = pz;
 				camera.position.z = cz;
+				l.position.z = cz - 100;
 				renderer.render( scene, camera );
 			}
 			}
